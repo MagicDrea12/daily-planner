@@ -1,65 +1,16 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Task Manager</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 40px auto;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 12px;
-        }
-        h1 { text-align: center; }
-        form { margin-bottom: 20px; }
-        input, select {
-            margin: 5px;
-            padding: 5px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
-        button {
-            padding: 5px 10px;
-            border: none;
-            background: #007bff;
-            color: white;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .completed { text-decoration: line-through; color: gray; }
-    </style>
-</head>
-<body>
-    <h1>Task Manager</h1>
+<html>
+  <head>
+    <title>My App</title>
+  </head>
+  <body>
+    <h1>My Tasks</h1>
 
-    <form action="/add" method="post">
-        <input type="text" name="title" placeholder="Task title" required>
-        <input type="number" name="duration" placeholder="Duration (min)" required>
-        <input type="text" name="deadline" placeholder="Deadline">
-        <select name="mood">
-            <option value="">Mood</option>
-            <option value="focused">Focused</option>
-            <option value="creative">Creative</option>
-            <option value="relaxed">Relaxed</option>
-        </select>
-        <button type="submit">Add Task</button>
-    </form>
+<ul>
+  {% for task in tasks %}
+    <li>{{ task }}</li>
+  {% endfor %}
+</ul>
 
-    <ul>
-        {% for task in tasks %}
-        <li class="{{ 'completed' if task.completed }}">
-            {{ task.title }} ({{ task.duration }} min)
-            - {{ task.mood or '—' }}
-            {% if not task.completed %}
-                <a href="/complete/{{ task.id }}">✅</a>
-            {% endif %}
-            <a href="/delete/{{ task.id }}">🗑️</a>
-        </li>
-        {% else %}
-        <p>No tasks yet!</p>
-        {% endfor %}
-    </ul>
-</body>
+  </body>
 </html>
