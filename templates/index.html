@@ -8,7 +8,7 @@
 
 <ul>
   {% for task in tasks %}
-    <li>{{ task.name }}</li>
+    <li>{{ task.name }} - {{ task.duration }} min - Deadline: {{ task.deadline }} - Priority {{ task.priority }} - Difficulty {{ task.difficulty }}</li>
   {% endfor %}
 </ul>
 

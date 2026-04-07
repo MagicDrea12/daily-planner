@@ -27,6 +27,8 @@ class Task(db.Model):
         self.difficulty = u_difficulty
 
 
+
+
 @app.route("/")
 def home():
     tasks = Task.query.all()
