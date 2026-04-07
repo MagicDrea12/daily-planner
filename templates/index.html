@@ -6,8 +6,7 @@
   <body>
     <h1>My Tasks</h1>
 
-    <h2>Add Task</h2>
-
+<h2>Add Task</h2>
 <form action="/add" method="POST">
   <input type="text" name="name" placeholder="Task name" required>
   <input type="number" name="duration" placeholder="Duration (min)" required>
@@ -16,14 +15,20 @@
   <input type="number" name="difficulty" placeholder="Difficulty" required>
   
   <button type="submit">Add Task</button>
-</form>
+</form> 
+
+<br/>
+<h2>List of Tasks</h2>
 
 
 <ul>
   {% for task in tasks %}
-    <li>{{ task.name }} - {{ task.duration }} min - Deadline: {{ task.deadline }} - Priority {{ task.priority }} - Difficulty {{ task.difficulty }}</li>
+    <li>Task ID: {{ task.id }} - Task Name: {{ task.name }} - Duration: {{ task.duration }} min - Deadline: {{ task.deadline }} - Priority: {{ task.priority }} - Difficulty: {{ task.difficulty }}</li>
   {% endfor %}
 </ul>
+
+<br/>
+<br/>
 
   </body>
 </html>

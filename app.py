@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request, redirect
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
@@ -27,12 +27,25 @@ class Task(db.Model):
         self.difficulty = u_difficulty
 
 
-
-
 @app.route("/")
 def home():
     tasks = Task.query.all()
     return render_template("index.html", tasks=tasks)
+
+@app.route("/add", methods=["POST"])
+def add_task():
+    name = request.form["name"]
+    duration = int(request.form["duration"])
+    deadline = int(request.form["deadline"])
+    priority = int(request.form["priority"])
+    difficulty = int(request.form["difficulty"])
+
+    new_task = Task(name, duration, deadline, priority, difficulty)
+
+    db.session.add(new_task)
+    db.session.commit()
+
+    return redirect("/")
 
 if __name__ == "__main__":
     with app.app_context():
