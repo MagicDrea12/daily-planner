@@ -103,9 +103,58 @@ class schedule():
 
         returned_tasks = returned_tasks[::-1]
         return returned_tasks
+    
+
+    def get_free_time_slots(self):
+
+        free_time = [] # free time is a 2D list, where each element is [free_time_start, free_time_end]
+        
+        if len(self.schedule_list) == 0:
+        
+            # If there are no blocks in the schedule, the free time spans the entirety of the day
+            free_time.append([0, 1439])
+            
+            
+        if len(self.schedule_list) > 0:
+        
+            # Append the free time block between the beginning of the day and the beginning of the first task		
+            
+            if self.schedule_list[0][1][0] != 0: # this checks that the start time is not the same as the end time
+            
+                free_time.append([0, self.schedule_list[0][1][0]])
+        
+        
+            if len(self.schedule_list) > 1:
+            
+                i = 0
+                
+                while i <= len(self.schedule_list)-2:
+                
+                    # Append a free time block to the list, that contains the start and end of each gap between blocks in the schedule.
+                    
+                    if self.schedule_list[i][1][1] != self.schedule_list[i+1][1][0]:
+                    
+                        free_time.append([self.schedule_list[i][1][1], self.schedule_list[i+1][1][0]])
+                    
+                    i = i + 1
+                    
+            # Append the free time block between the end of the last task and the end of the day
+            
+            if self.schedule_list[-1][1][1] != 1439:
+            
+                free_time.append([self.schedule_list[-1][1][1], 1439])
+            
+        return free_time
+
+
 
 Schedule = schedule()
-print(Schedule.return_schedule())
+
+"""Schedule.add_busy_time_slot(200, 500)
+Schedule.add_busy_time_slot(500, 800)
+Schedule.add_busy_time_slot(1000, 1200)
+print("Schedule List: ", Schedule.return_schedule())
+print("Free Time Slots: ", Schedule.get_free_time_slots())"""
 
 
 """with app.app_context():
