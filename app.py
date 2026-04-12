@@ -86,26 +86,30 @@ class schedule():
             if removed is False:
                 print("The system could not find the task to be deleted.")
 
+
     def remove_all_tasks(self):
 
         returned_tasks = []
-        block = 0
+        block = len(self.schedule_list) - 1
         
-        while block < len(self.schedule_list):
+        while block >= 0:
         
             if self.schedule_list[block][0] != "BUSY":
             
                 returned_tasks.append(self.schedule_list[block][0])
                 self.schedule_list.pop(block)
                     
-            block = block + 1
-            
+            block = block - 1
+
+        returned_tasks = returned_tasks[::-1]
         return returned_tasks
 
 Schedule = schedule()
+print(Schedule.return_schedule())
+
+
 """with app.app_context():
     Schedule.system_add_task(1, 400)""" # this is system_add_task()
-print(Schedule.return_schedule())
 
 """@app.route("/remove")
 def remove():
@@ -114,14 +118,14 @@ def remove():
         print(Schedule.return_schedule())
     return redirect("/schedule_view")"""
 
-@app.route("/remove_all")
+"""@app.route("/remove_all")
 def remove_all():
     with app.app_context():
         print("Before:", Schedule.return_schedule())
         tasks = Schedule.remove_all_tasks()
         print("After:", Schedule.return_schedule())
         print(tasks)
-    return redirect("/schedule_view")
+    return redirect("/schedule_view")"""
 
 
 
