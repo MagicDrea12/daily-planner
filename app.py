@@ -65,7 +65,7 @@ class schedule():
 	    self.schedule_list.append([task_id, [task_start_time, task_end_time]])
 
 
-    def remove_selected_tasks(list_of_tasks_to_remove):
+    def remove_selected_tasks(self, list_of_tasks_to_remove):
 
         for i in range(0, len(list_of_tasks_to_remove)):
         
@@ -74,11 +74,11 @@ class schedule():
             removed = False
             block = 0
         
-            while removed is False and block < len(schedule_list):
+            while removed is False and block < len(self.schedule_list):
         
-                if schedule_list[block][0] == task_to_remove:
+                if self.schedule_list[block][0] == task_to_remove:
             
-                    schedule_list.pop(block)
+                    self.schedule_list.pop(block)
                     removed = True
                     
                 block = block + 1
@@ -86,13 +86,42 @@ class schedule():
             if removed is False:
                 print("The system could not find the task to be deleted.")
 
+    def remove_all_tasks(self):
+
+        returned_tasks = []
+        block = 0
+        
+        while block < len(self.schedule_list):
+        
+            if self.schedule_list[block][0] != "BUSY":
+            
+                returned_tasks.append(self.schedule_list[block][0])
+                self.schedule_list.pop(block)
+                    
+            block = block + 1
+            
+        return returned_tasks
+
 Schedule = schedule()
 """with app.app_context():
     Schedule.system_add_task(1, 400)""" # this is system_add_task()
 print(Schedule.return_schedule())
 
-list_of_tasks_to_remove
+"""@app.route("/remove")
+def remove():
+    with app.app_context():
+        Schedule.remove_selected_tasks([1, 3])
+        print(Schedule.return_schedule())
+    return redirect("/schedule_view")"""
 
+@app.route("/remove_all")
+def remove_all():
+    with app.app_context():
+        print("Before:", Schedule.return_schedule())
+        tasks = Schedule.remove_all_tasks()
+        print("After:", Schedule.return_schedule())
+        print(tasks)
+    return redirect("/schedule_view")
 
 
 
@@ -102,7 +131,6 @@ list_of_tasks_to_remove
 @app.route("/")
 def home():
     tasks = Task.query.all()
-    print(tasks)
     return render_template("index.html", tasks=tasks)
 
 
@@ -120,6 +148,8 @@ def add_task():
     db.session.commit()
 
     # THIS IS WHERE A NEW TASK GETS AUTOMATICALLY SCHEDULED IN!
+    with app.app_context():
+        Schedule.system_add_task(new_task.id, 100)
 
     print(Schedule.return_schedule())
 
