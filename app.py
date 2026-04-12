@@ -8,7 +8,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 
-# Class Task Design and Database
+# Class Task Design and Database ----------------------------------------------------------------------
 
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -26,11 +26,85 @@ class Task(db.Model):
         self.priority = u_priority
         self.difficulty = u_difficulty
 
+# Class Schedule Design -------------------------------------
+
+class schedule():
+	
+    def __init__(self):
+        self.schedule_list = []
+    
+
+    def add_busy_time_slot(self, start, end):
+
+        def sort_by_start_time(busy_times):
+        
+            def ordering(time):
+                return time[1][0]
+          
+            sorted_schedule = sorted(busy_times, key=ordering)
+        
+            return(sorted_schedule)
+        
+        if start < end:
+        
+            self.schedule_list.append(["BUSY", [start, end]])
+        
+        self.schedule_list = sort_by_start_time(self.schedule_list)
+
+
+    def return_schedule(self):
+        return self.schedule_list
+
+
+    def system_add_task(self, task_id, designated_time):
+
+	    task_start_time = designated_time
+	    duration = Task.query.get(task_id).duration
+	    task_end_time = task_start_time + duration
+	
+	    self.schedule_list.append([task_id, [task_start_time, task_end_time]])
+
+
+    def remove_selected_tasks(list_of_tasks_to_remove):
+
+        for i in range(0, len(list_of_tasks_to_remove)):
+        
+            task_to_remove = list_of_tasks_to_remove[i]
+            
+            removed = False
+            block = 0
+        
+            while removed is False and block < len(schedule_list):
+        
+                if schedule_list[block][0] == task_to_remove:
+            
+                    schedule_list.pop(block)
+                    removed = True
+                    
+                block = block + 1
+                
+            if removed is False:
+                print("The system could not find the task to be deleted.")
+
+Schedule = schedule()
+"""with app.app_context():
+    Schedule.system_add_task(1, 400)""" # this is system_add_task()
+print(Schedule.return_schedule())
+
+list_of_tasks_to_remove
+
+
+
+
+# Routes ----------------------------------------------------------------------------
+
 
 @app.route("/")
 def home():
     tasks = Task.query.all()
+    print(tasks)
     return render_template("index.html", tasks=tasks)
+
 
 @app.route("/add", methods=["POST"])
 def add_task():
@@ -45,7 +119,39 @@ def add_task():
     db.session.add(new_task)
     db.session.commit()
 
+    # THIS IS WHERE A NEW TASK GETS AUTOMATICALLY SCHEDULED IN!
+
+    print(Schedule.return_schedule())
+
     return redirect("/")
+
+
+@app.route("/schedule_view")
+def schedule_view():
+    schedule_list = Schedule.return_schedule()
+
+    def format_schedule(schedule_list):
+
+        schedule_to_display = []
+
+        for block in schedule_list:
+
+            if block[0] == "BUSY":
+                schedule_to_display.append(["BUSY", block[1]])
+
+            else:
+                task_id = block[0]
+                task = Task.query.get(task_id)
+                schedule_to_display.append([task.name, block[1]])
+
+        return schedule_to_display
+
+    schedule_list = format_schedule(schedule_list)
+
+    return render_template("schedule_view.html", schedule_list=schedule_list)
+
+# --------------------------------------------------------
+
 
 if __name__ == "__main__":
     with app.app_context():

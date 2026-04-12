@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My App</title>
+  </head>
+<body>
+    <h1>The Schedule View</h1>
+    <br/>
+
+<ul>
+  {% for block in schedule_list %}
+    <li>
+      {{block[0]}}:    {{block[1][0]}} -> {{block[1][1]}}</li>
+  {% endfor %}
+</ul>
+
+
+<br/>
+<br/>
+</body>
+</html>
