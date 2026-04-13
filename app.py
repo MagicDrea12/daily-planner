@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect
 from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///tasks.db'
@@ -34,23 +35,22 @@ class schedule():
         self.schedule_list = []
     
 
+    def sort_schedule(self):
+
+        def ordering(time):
+            return time[1][0]
+          
+        self.schedule_list = sorted(self.schedule_list, key=ordering)
+
+
     def add_busy_time_slot(self, start, end):
 
-        def sort_by_start_time(busy_times):
-        
-            def ordering(time):
-                return time[1][0]
-          
-            sorted_schedule = sorted(busy_times, key=ordering)
-        
-            return(sorted_schedule)
-        
         if start < end:
         
             self.schedule_list.append(["BUSY", [start, end]])
-        
-        self.schedule_list = sort_by_start_time(self.schedule_list)
 
+        schedule.sort_schedule(self)
+        
 
     def return_schedule(self):
         return self.schedule_list
@@ -58,11 +58,12 @@ class schedule():
 
     def system_add_task(self, task_id, designated_time):
 
-	    task_start_time = designated_time
-	    duration = Task.query.get(task_id).duration
-	    task_end_time = task_start_time + duration
-	
-	    self.schedule_list.append([task_id, [task_start_time, task_end_time]])
+        task_start_time = designated_time
+        with app.app_context():
+            duration = Task.query.get(task_id).duration
+        task_end_time = task_start_time + duration
+
+        self.schedule_list.append([task_id, [task_start_time, task_end_time]])
 
 
     def remove_selected_tasks(self, list_of_tasks_to_remove):
@@ -147,14 +148,41 @@ class schedule():
         return free_time
 
 
+    def return_future_tasks(self):
+
+        current_time = get_current_time()
+        
+        future_tasks = []
+        
+        for task in self.schedule_list:
+
+            if task[0] != "BUSY":
+            
+                if task[1][0] >= current_time:
+                
+                    future_tasks.append(task[0])
+                        
+        return future_tasks
+
+
 
 Schedule = schedule()
 
-"""Schedule.add_busy_time_slot(200, 500)
 Schedule.add_busy_time_slot(500, 800)
+print("Schedule List: ", Schedule.return_schedule())
+
 Schedule.add_busy_time_slot(1000, 1200)
 print("Schedule List: ", Schedule.return_schedule())
-print("Free Time Slots: ", Schedule.get_free_time_slots())"""
+
+Schedule.system_add_task(3, 804)
+print("Schedule List: ", Schedule.return_schedule())
+
+Schedule.add_busy_time_slot(300, 400)
+print("Schedule List: ", Schedule.return_schedule())
+
+
+
+#print("Free Time Slots: ", Schedule.get_free_time_slots())
 
 
 """with app.app_context():
@@ -175,6 +203,15 @@ def remove_all():
         print("After:", Schedule.return_schedule())
         print(tasks)
     return redirect("/schedule_view")"""
+
+# Helper Functions ------------------------------------------------------------------
+
+def get_current_time():
+    full_date = datetime.now()
+    current_time = (full_date.hour * 60) + full_date.minute
+    return str(current_time)
+
+
 
 
 
