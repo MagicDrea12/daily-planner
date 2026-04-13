@@ -15,7 +15,35 @@ db = SQLAlchemy(app)
 def get_current_time():
     full_date = datetime.now()
     current_time = (full_date.hour * 60) + full_date.minute
-    return current_time
+    return 500
+
+
+def find_start_of_day(current_time, times):
+  
+  counter = 0 # this will be the index of the task slot that the current time will be compared to
+  found = False
+  
+  while found is False:
+    if counter < len(times): # this condition ensures that an object not found error does not occur
+      if current_time >= times[counter][1][0]: # if the current time is after the start time of the currently investigated task
+        counter += 1
+      else:
+        found = True
+    else:
+      found = True
+  
+  counter -= 1 # goes back to the previous task slot once the comparisons fail
+  
+  if counter == -1: # if the current time is before the beginning of the first task
+    start_of_day = current_time
+  
+  elif current_time <= times[counter][1][1]: # if the current time is before the end of the investigated task
+    start_of_day = times[counter][1][1] # then the start of the day should be set to the end of the task
+  
+  else: # if the current time is after the end of the last task
+    start_of_day = current_time # then the start of the day is the current time
+
+  return [start_of_day, counter+1]
 
 
 # Class Task Design and Database ----------------------------------------------------------------------
@@ -120,25 +148,30 @@ class schedule():
     def get_free_time_slots(self):
 
         free_time = [] # free time is a 2D list, where each element is [free_time_start, free_time_end]
+        current_time = get_current_time()
+        values = find_start_of_day(current_time, self.schedule_list)
+        start_of_day = values[0]
+        first_task_index = values[1]
         
-        if len(self.schedule_list) == 0:
+        if len(self.schedule_list)-first_task_index == 0:
         
             # If there are no blocks in the schedule, the free time spans the entirety of the day
-            free_time.append([0, 1439])
+            if start_of_day != 1439:
+                free_time.append([start_of_day, 1439])
             
             
-        if len(self.schedule_list) > 0:
+        if len(self.schedule_list)-first_task_index > 0:
         
             # Append the free time block between the beginning of the day and the beginning of the first task		
             
-            if self.schedule_list[0][1][0] != 0: # this checks that the start time is not the same as the end time
+            if self.schedule_list[first_task_index][1][0] != start_of_day: # this checks that the start time is not the same as the end time
             
-                free_time.append([0, self.schedule_list[0][1][0]])
+                free_time.append([start_of_day, self.schedule_list[first_task_index][1][0]])
         
         
-            if len(self.schedule_list) > 1:
+            if len(self.schedule_list)-first_task_index > 1:
             
-                i = 0
+                i = first_task_index
                 
                 while i <= len(self.schedule_list)-2:
                 
@@ -169,7 +202,7 @@ class schedule():
 
             if task[0] != "BUSY":
             
-                if task[1][0] >= current_time:
+                if task[1][1] > current_time:
                 
                     future_tasks.append(task[0])
                         
@@ -178,27 +211,33 @@ class schedule():
     
     def automatic_scheduler(self, tasks_to_be_rescheduled):
 
-        schedule.remove_selected_tasks(self, tasks_to_be_rescheduled)
-        
-        rescheduling = tasks_to_be_rescheduled
-        
         current_time = get_current_time()
-
+        
         future_tasks = schedule.return_future_tasks(self)
 
-        for task_id in future_tasks:
-            rescheduling.append(task_id)
+        rescheduling = list(set(tasks_to_be_rescheduled + future_tasks))
+
+        schedule.remove_selected_tasks(self, rescheduling)
+        print("This is the new schedule:")
+
+        print(self.schedule_list)
+
+        print("This is what we're rescheduling")
+
+        print(rescheduling)
         
         
         for task_id in rescheduling:
         
             list_of_free_times = schedule.get_free_time_slots(self)
+
+            print(f"List of free times: {list_of_free_times}")
             
             scheduled = False
             
             for i in range(0, len(list_of_free_times)):
             
-                if scheduled == False:
+                if scheduled is False:
 
                     with app.app_context():
                         task_duration = Task.query.get(int(task_id)).duration
@@ -212,34 +251,33 @@ class schedule():
                     
                         schedule.system_add_task(self, task_id, free_time_start)
                         scheduled = True
-                        
+                        print(f"{task_id} has been scheduled")
+
+            if scheduled is False:
+                print(f"Task ID: {task_id} could not be scheduled.")            
             schedule.sort_schedule(self)
+            print(self.schedule_list)
 
 
 
 Schedule = schedule()
 
 Schedule.system_add_task(2, 500)
-print("Schedule List: ", Schedule.return_schedule())
 
 Schedule.system_add_task(1, 1000)
-print("Schedule List: ", Schedule.return_schedule())
 
 Schedule.system_add_task(3, 804)
-print("Schedule List: ", Schedule.return_schedule())
 
 Schedule.add_busy_time_slot(600, 700)
-print("Schedule List: ", Schedule.return_schedule())
 
 Schedule.add_busy_time_slot(200, 250)
 print("Schedule List: ", Schedule.return_schedule())
 
-
-tasks_to_be_rescheduled = [3, 1]
+"""tasks_to_be_rescheduled = [3, 1]
 
 Schedule.automatic_scheduler(tasks_to_be_rescheduled)
 
-print(Schedule.return_schedule())
+print(Schedule.return_schedule())"""
 
 
 
@@ -269,6 +307,8 @@ def remove_all():
         print("After:", Schedule.return_schedule())
         print(tasks)
     return redirect("/schedule_view")"""
+
+
 
 
 
@@ -325,6 +365,10 @@ def schedule_view():
         return schedule_to_display
 
     schedule_list = format_schedule(schedule_list)
+    print("FIRST")
+    print(schedule_list)
+    print("AFTER")
+    print(Schedule.return_schedule())
 
     return render_template("schedule_view.html", schedule_list=schedule_list)
 
