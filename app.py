@@ -9,6 +9,15 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 
+
+# Helper Functions ------------------------------------------------------------------
+
+def get_current_time():
+    full_date = datetime.now()
+    current_time = (full_date.hour * 60) + full_date.minute
+    return current_time
+
+
 # Class Task Design and Database ----------------------------------------------------------------------
 
 class Task(db.Model):
@@ -185,6 +194,7 @@ print("Schedule List: ", Schedule.return_schedule())
 Schedule.add_busy_time_slot(200, 250)
 print("Schedule List: ", Schedule.return_schedule())
 
+print(Schedule.return_future_tasks())
 
 
 #print("Free Time Slots: ", Schedule.get_free_time_slots())
@@ -208,14 +218,6 @@ def remove_all():
         print("After:", Schedule.return_schedule())
         print(tasks)
     return redirect("/schedule_view")"""
-
-# Helper Functions ------------------------------------------------------------------
-
-def get_current_time():
-    full_date = datetime.now()
-    current_time = (full_date.hour * 60) + full_date.minute
-    return str(current_time)
-
 
 
 
