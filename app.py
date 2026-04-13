@@ -65,6 +65,8 @@ class schedule():
 
         self.schedule_list.append([task_id, [task_start_time, task_end_time]])
 
+        schedule.sort_schedule(self)
+
 
     def remove_selected_tasks(self, list_of_tasks_to_remove):
 
@@ -168,16 +170,19 @@ class schedule():
 
 Schedule = schedule()
 
-Schedule.add_busy_time_slot(500, 800)
+Schedule.system_add_task(2, 500)
 print("Schedule List: ", Schedule.return_schedule())
 
-Schedule.add_busy_time_slot(1000, 1200)
+Schedule.system_add_task(1, 1000)
 print("Schedule List: ", Schedule.return_schedule())
 
 Schedule.system_add_task(3, 804)
 print("Schedule List: ", Schedule.return_schedule())
 
-Schedule.add_busy_time_slot(300, 400)
+Schedule.add_busy_time_slot(600, 700)
+print("Schedule List: ", Schedule.return_schedule())
+
+Schedule.add_busy_time_slot(200, 250)
 print("Schedule List: ", Schedule.return_schedule())
 
 
