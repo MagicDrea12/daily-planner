@@ -7,12 +7,20 @@
     <h1>The Schedule View</h1>
     <br/>
 
+<form action="/reschedule" method="POST">
 <ul>
   {% for block in schedule_list %}
     <li>
-      {{block[0]}}:    {{block[1][0]}} -> {{block[1][1]}}</li>
+      {{block[0]}}:    {{block[1][0]}} -> {{block[1][1]}}
+      
+      {% if block[0] != "BUSY" %}
+        <input type="checkbox" name="selected_tasks" value="{{ block[2] }}">
+      {% endif %}
+    </li> 
   {% endfor %}
 </ul>
+<button type="submit">Reschedule</button>
+</form>
 
 
 <br/>

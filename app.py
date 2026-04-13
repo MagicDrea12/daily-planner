@@ -320,7 +320,7 @@ def schedule_view():
             else:
                 task_id = block[0]
                 task = Task.query.get(task_id)
-                schedule_to_display.append([task.name, block[1]])
+                schedule_to_display.append([task.name, block[1], task_id])
 
         return schedule_to_display
 
@@ -328,10 +328,23 @@ def schedule_view():
 
     return render_template("schedule_view.html", schedule_list=schedule_list)
 
+
+@app.route("/reschedule", methods=["POST"])
+def reschedule():
+    selected_ids = request.form.getlist("selected_tasks")
+
+    selected_ids = [int(i) for i in selected_ids] # converts each string id into an integer in the list
+
+    print(selected_ids)
+
+    new_schedule = Schedule.automatic_scheduler(selected_ids)
+
+    return redirect("/schedule_view")
+
 # --------------------------------------------------------
 
 
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
-    app.run(debug=True, port=5001)
+    app.run(debug=True, port=5000)
