@@ -179,12 +179,8 @@ class schedule():
     def automatic_scheduler(self, tasks_to_be_rescheduled):
 
         schedule.remove_selected_tasks(self, tasks_to_be_rescheduled)
-
-        print(self.schedule_list)
         
         rescheduling = tasks_to_be_rescheduled
-
-        print("BEFORE", rescheduling)
         
         current_time = get_current_time()
 
@@ -192,18 +188,11 @@ class schedule():
 
         for task_id in future_tasks:
             rescheduling.append(task_id)
-
-        print("AFTER", rescheduling)
         
         
         for task_id in rescheduling:
-
-            print("HELP!")
-            print(task_id)
         
             list_of_free_times = schedule.get_free_time_slots(self)
-
-            print("LOFTs: ", list_of_free_times)
             
             scheduled = False
             
@@ -345,4 +334,4 @@ def schedule_view():
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+    app.run(debug=True, port=5001)
