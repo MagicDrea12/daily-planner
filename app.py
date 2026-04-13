@@ -175,6 +175,57 @@ class schedule():
                         
         return future_tasks
 
+    
+    def automatic_scheduler(self, tasks_to_be_rescheduled):
+
+        schedule.remove_selected_tasks(self, tasks_to_be_rescheduled)
+
+        print(self.schedule_list)
+        
+        rescheduling = tasks_to_be_rescheduled
+
+        print("BEFORE", rescheduling)
+        
+        current_time = get_current_time()
+
+        future_tasks = schedule.return_future_tasks(self)
+
+        for task_id in future_tasks:
+            rescheduling.append(task_id)
+
+        print("AFTER", rescheduling)
+        
+        
+        for task_id in rescheduling:
+
+            print("HELP!")
+            print(task_id)
+        
+            list_of_free_times = schedule.get_free_time_slots(self)
+
+            print("LOFTs: ", list_of_free_times)
+            
+            scheduled = False
+            
+            for i in range(0, len(list_of_free_times)):
+            
+                if scheduled == False:
+
+                    with app.app_context():
+                        task_duration = Task.query.get(int(task_id)).duration
+                    
+                    free_time_start = list_of_free_times[i][0]
+                    free_time_end = list_of_free_times[i][1]
+                    
+                    free_time_width = free_time_end  - free_time_start
+                
+                    if task_duration <= free_time_width:
+                    
+                        schedule.system_add_task(self, task_id, free_time_start)
+                        scheduled = True
+                        
+            schedule.sort_schedule(self)
+
 
 
 Schedule = schedule()
@@ -194,8 +245,19 @@ print("Schedule List: ", Schedule.return_schedule())
 Schedule.add_busy_time_slot(200, 250)
 print("Schedule List: ", Schedule.return_schedule())
 
-print(Schedule.return_future_tasks())
 
+tasks_to_be_rescheduled = [3, 1]
+
+Schedule.automatic_scheduler(tasks_to_be_rescheduled)
+
+print(Schedule.return_schedule())
+
+
+
+
+
+
+# print(Schedule.return_future_tasks())
 
 #print("Free Time Slots: ", Schedule.get_free_time_slots())
 
