@@ -15,7 +15,7 @@ db = SQLAlchemy(app)
 def get_current_time():
     full_date = datetime.now()
     current_time = (full_date.hour * 60) + full_date.minute
-    return 500
+    return 960
 
 
 def find_start_of_day(current_time, times):
@@ -262,16 +262,30 @@ class schedule():
 
 Schedule = schedule()
 
-Schedule.system_add_task(2, 500)
+Schedule.add_busy_time_slot(0, 465)
+
+Schedule.add_busy_time_slot(525, 655)
+
+Schedule.add_busy_time_slot(675, 775)
+
+Schedule.add_busy_time_slot(845, 960)
+
+Schedule.add_busy_time_slot(1025, 1200)
+
+Schedule.add_busy_time_slot(1350, 1439)
+
+
+
+
+
+
+"""Schedule.system_add_task(2, 500)
 
 Schedule.system_add_task(1, 1000)
 
 Schedule.system_add_task(3, 804)
 
-Schedule.add_busy_time_slot(600, 700)
-
-Schedule.add_busy_time_slot(200, 250)
-print("Schedule List: ", Schedule.return_schedule())
+print("Schedule List: ", Schedule.return_schedule())"""
 
 """tasks_to_be_rescheduled = [3, 1]
 
@@ -336,8 +350,7 @@ def add_task():
     db.session.commit()
 
     # THIS IS WHERE A NEW TASK GETS AUTOMATICALLY SCHEDULED IN!
-    with app.app_context():
-        Schedule.system_add_task(new_task.id, 100)
+    Schedule.automatic_scheduler([new_task.id])
 
     print(Schedule.return_schedule())
 
@@ -352,10 +365,30 @@ def schedule_view():
 
         schedule_to_display = []
 
+        print(schedule_list)
+
         for block in schedule_list:
 
             if block[0] == "BUSY":
-                schedule_to_display.append(["BUSY", block[1]])
+                
+                start_hours = str(int(block[1][0]) // 60)
+                start_minutes = str(int(block[1][0]) % 60)
+                while len(start_hours) < 2:
+                    start_hours = "0" + start_hours
+                while len(start_minutes) < 2:
+                    start_hours = "0" + start_hours
+                start_time = start_hours + ":" + start_minutes
+
+                end_hours = str(int(block[1][1]) // 60)
+                end_minutes = str(int(block[1][1]) % 60)
+                while len(end_hours) < 2:
+                    end_hours = "0" + end_hours
+                while len(end_minutes) < 2:
+                    end_hours = "0" + end_hours
+                end_time = end_hours + ":" + end_minutes
+
+                schedule_to_display.append(["BUSY", [start_time, end_time]])
+                print([start_time, end_time])
 
             else:
                 task_id = block[0]
@@ -365,10 +398,6 @@ def schedule_view():
         return schedule_to_display
 
     schedule_list = format_schedule(schedule_list)
-    print("FIRST")
-    print(schedule_list)
-    print("AFTER")
-    print(Schedule.return_schedule())
 
     return render_template("schedule_view.html", schedule_list=schedule_list)
 
@@ -381,7 +410,7 @@ def reschedule():
 
     print(selected_ids)
 
-    new_schedule = Schedule.automatic_scheduler(selected_ids)
+    Schedule.automatic_scheduler(selected_ids)
 
     return redirect("/schedule_view")
 
