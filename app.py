@@ -262,30 +262,16 @@ class schedule():
 
 Schedule = schedule()
 
-Schedule.add_busy_time_slot(0, 465)
-
-Schedule.add_busy_time_slot(525, 655)
-
-Schedule.add_busy_time_slot(675, 775)
-
-Schedule.add_busy_time_slot(845, 960)
-
-Schedule.add_busy_time_slot(1025, 1200)
-
-Schedule.add_busy_time_slot(1350, 1439)
-
-
-
-
-
-
-"""Schedule.system_add_task(2, 500)
+Schedule.system_add_task(2, 500)
 
 Schedule.system_add_task(1, 1000)
 
 Schedule.system_add_task(3, 804)
 
-print("Schedule List: ", Schedule.return_schedule())"""
+Schedule.add_busy_time_slot(600, 700)
+
+Schedule.add_busy_time_slot(200, 250)
+print("Schedule List: ", Schedule.return_schedule())
 
 """tasks_to_be_rescheduled = [3, 1]
 
@@ -350,7 +336,8 @@ def add_task():
     db.session.commit()
 
     # THIS IS WHERE A NEW TASK GETS AUTOMATICALLY SCHEDULED IN!
-    Schedule.automatic_scheduler([new_task.id])
+    with app.app_context():
+        Schedule.system_add_task(new_task.id, 100)
 
     print(Schedule.return_schedule())
 
@@ -365,13 +352,10 @@ def schedule_view():
 
         schedule_to_display = []
 
-        print(schedule_list)
-
         for block in schedule_list:
 
             if block[0] == "BUSY":
-                
-                schedule_to_display.append(["BUSY", [block[1][0], block[1][1]]])
+                schedule_to_display.append(["BUSY", block[1]])
 
             else:
                 task_id = block[0]
@@ -381,6 +365,10 @@ def schedule_view():
         return schedule_to_display
 
     schedule_list = format_schedule(schedule_list)
+    print("FIRST")
+    print(schedule_list)
+    print("AFTER")
+    print(Schedule.return_schedule())
 
     return render_template("schedule_view.html", schedule_list=schedule_list)
 
@@ -389,11 +377,13 @@ def schedule_view():
 def reschedule():
     selected_ids = request.form.getlist("selected_tasks")
 
+    print(selected_ids)
+
     selected_ids = [int(i) for i in selected_ids] # converts each string id into an integer in the list
 
     print(selected_ids)
 
-    Schedule.automatic_scheduler(selected_ids)
+    new_schedule = Schedule.automatic_scheduler(selected_ids)
 
     return redirect("/schedule_view")
 
