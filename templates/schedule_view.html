@@ -14,7 +14,7 @@
       {{block[0]}}:    {{block[1][0]}} -> {{block[1][1]}}
       
       {% if block[0] != "BUSY" %}
-        <input type="checkbox" name="selected_tasks" value="{{ block[2] }}">
+        <input type="checkbox" name="selected_tasks" value="{{ block[1] }}">
       {% endif %}
     </li> 
   {% endfor %}
