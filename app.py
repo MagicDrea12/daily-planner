@@ -15,7 +15,7 @@ db = SQLAlchemy(app)
 def get_current_time():
     full_date = datetime.now()
     current_time = (full_date.hour * 60) + full_date.minute
-    return current_time
+    return 977
 
 
 def find_start_of_day(current_time, times):
@@ -262,15 +262,18 @@ class schedule():
 
 Schedule = schedule()
 
-Schedule.system_add_task(2, 500)
+Schedule.add_busy_time_slot(0, 465)
 
-Schedule.system_add_task(1, 1000)
+Schedule.add_busy_time_slot(525, 655)
 
-Schedule.system_add_task(3, 804)
+Schedule.add_busy_time_slot(675, 775)
 
-Schedule.add_busy_time_slot(600, 700)
+Schedule.add_busy_time_slot(845, 960)
 
-Schedule.add_busy_time_slot(200, 250)
+Schedule.add_busy_time_slot(1025, 1200)
+
+Schedule.add_busy_time_slot(1350, 1439)
+
 print("Schedule List: ", Schedule.return_schedule())
 
 """tasks_to_be_rescheduled = [3, 1]
@@ -337,7 +340,7 @@ def add_task():
 
     # THIS IS WHERE A NEW TASK GETS AUTOMATICALLY SCHEDULED IN!
     with app.app_context():
-        Schedule.system_add_task(new_task.id, 100)
+        Schedule.automatic_scheduler([new_task.id])
 
     print(Schedule.return_schedule())
 
