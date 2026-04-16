@@ -15,7 +15,7 @@ db = SQLAlchemy(app)
 def get_current_time():
     full_date = datetime.now()
     current_time = (full_date.hour * 60) + full_date.minute
-    return 960
+    return current_time
 
 
 def find_start_of_day(current_time, times):
@@ -371,24 +371,7 @@ def schedule_view():
 
             if block[0] == "BUSY":
                 
-                start_hours = str(int(block[1][0]) // 60)
-                start_minutes = str(int(block[1][0]) % 60)
-                while len(start_hours) < 2:
-                    start_hours = "0" + start_hours
-                while len(start_minutes) < 2:
-                    start_hours = "0" + start_hours
-                start_time = start_hours + ":" + start_minutes
-
-                end_hours = str(int(block[1][1]) // 60)
-                end_minutes = str(int(block[1][1]) % 60)
-                while len(end_hours) < 2:
-                    end_hours = "0" + end_hours
-                while len(end_minutes) < 2:
-                    end_hours = "0" + end_hours
-                end_time = end_hours + ":" + end_minutes
-
-                schedule_to_display.append(["BUSY", [start_time, end_time]])
-                print([start_time, end_time])
+                schedule_to_display.append(["BUSY", [block[1][0], block[1][1]]])
 
             else:
                 task_id = block[0]
