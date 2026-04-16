@@ -15,7 +15,7 @@ db = SQLAlchemy(app)
 def get_current_time():
     full_date = datetime.now()
     current_time = (full_date.hour * 60) + full_date.minute
-    return 977
+    return current_time
 
 
 def find_start_of_day(current_time, times):
