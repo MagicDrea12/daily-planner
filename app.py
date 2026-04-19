@@ -9,61 +9,6 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 
-
-# Helper Functions ------------------------------------------------------------------
-
-def get_current_time():
-    full_date = datetime.now()
-    current_time = (full_date.hour * 60) + full_date.minute
-    return current_time
-
-
-def convert_time(integer_time):
-
-	hours = str(integer_time // 60) # integer divides to find the number of hours
-	minutes = str(integer_time % 60) # finds the remainder after this division
-	
-	if len(hours) < 2: # checking if the hours length is too short
-	
-		hours = "0" + hours # performing concatenation to make the hours 2 digits, if not originally
-		
-	if len(minutes) < 2: # does the same for the minutes
-	
-		minutes = "0" + minutes
-	
-	converted_time = hours + ":" + minutes
-			
-	return converted_time
-
-
-def find_start_of_day(current_time, times):
-  
-  counter = 0 # this will be the index of the task slot that the current time will be compared to
-  found = False
-  
-  while found is False:
-    if counter < len(times): # this condition ensures that an object not found error does not occur
-      if current_time >= times[counter][1][0]: # if the current time is after the start time of the currently investigated task
-        counter += 1
-      else:
-        found = True
-    else:
-      found = True
-  
-  counter -= 1 # goes back to the previous task slot once the comparisons fail
-  
-  if counter == -1: # if the current time is before the beginning of the first task
-    start_of_day = current_time
-  
-  elif current_time <= times[counter][1][1]: # if the current time is before the end of the investigated task
-    start_of_day = times[counter][1][1] # then the start of the day should be set to the end of the task
-  
-  else: # if the current time is after the end of the last task
-    start_of_day = current_time # then the start of the day is the current time
-
-  return [start_of_day, counter+1]
-
-
 # Class Daily Check in Database Design ------------------------------------------------------------
 
 class Mood(db.Model):
@@ -302,16 +247,12 @@ Schedule.add_busy_time_slot(1350, 1439)
 
 print("Schedule List: ", Schedule.return_schedule())
 
+
 """tasks_to_be_rescheduled = [3, 1]
 
 Schedule.automatic_scheduler(tasks_to_be_rescheduled)
 
 print(Schedule.return_schedule())"""
-
-
-
-
-
 
 # print(Schedule.return_future_tasks())
 
@@ -339,20 +280,112 @@ def remove_all():
 
 
 
+# Helper Functions ------------------------------------------------------------------
+
+def get_current_time():
+    full_date = datetime.now()
+    current_time = (full_date.hour * 60) + full_date.minute
+    return current_time
+
+
+def convert_time(integer_time):
+
+	hours = str(integer_time // 60) # integer divides to find the number of hours
+	minutes = str(integer_time % 60) # finds the remainder after this division
+	
+	if len(hours) < 2: # checking if the hours length is too short
+	
+		hours = "0" + hours # performing concatenation to make the hours 2 digits, if not originally
+		
+	if len(minutes) < 2: # does the same for the minutes
+	
+		minutes = "0" + minutes
+	
+	converted_time = hours + ":" + minutes
+			
+	return converted_time
+
+
+def find_start_of_day(current_time, times):
+  
+  counter = 0 # this will be the index of the task slot that the current time will be compared to
+  found = False
+  
+  while found is False:
+    if counter < len(times): # this condition ensures that an object not found error does not occur
+      if current_time >= times[counter][1][0]: # if the current time is after the start time of the currently investigated task
+        counter += 1
+      else:
+        found = True
+    else:
+      found = True
+  
+  counter -= 1 # goes back to the previous task slot once the comparisons fail
+  
+  if counter == -1: # if the current time is before the beginning of the first task
+    start_of_day = current_time
+  
+  elif current_time <= times[counter][1][1]: # if the current time is before the end of the investigated task
+    start_of_day = times[counter][1][1] # then the start of the day should be set to the end of the task
+  
+  else: # if the current time is after the end of the last task
+    start_of_day = current_time # then the start of the day is the current time
+
+  return [start_of_day, counter+1]
+
+
+def get_mean_mood():
+
+    with app.app_context():
+        moods = Mood.query.order_by(Mood.date.desc()).limit(7).all()
+        # gets a list of the 7 most recent mood entries
+
+    for mood in moods:
+        print("Mood: ", mood.mood_value)
+
+    total = 0
+
+    if len(moods) < 7: # if there are less than 7 entries
+
+        placeholders = 7 - len(moods)
+        # find the number of extra 5's to add to the total
+
+        for i in range(0, placeholders):
+            total = total + 5
+            # adds a 5 for every mood entry missing of the 7 required
+
+    for mood in moods:
+        total = total + mood.mood_value
+        # adds the mood value for every entry
+
+    mean = total / 7
+
+    return mean
+
+print("Mean mood: ", get_mean_mood())
+
+
+def ensure_check_in():
+    today = datetime.now().date()
+    existing = Mood.query.filter_by(date=today).first()
+    if not existing: # if there is no mood entry for today
+        return redirect(url_for("check_in")) # go to the check in page
 
 
 
 # Routes ----------------------------------------------------------------------------
 
 
-@app.route("/")
+@app.route("/menu")
 def home():
+    ensure_check_in()
     tasks = Task.query.all()
     return render_template("index.html", tasks=tasks)
 
 
 @app.route("/add", methods=["POST"])
 def add_task():
+    ensure_check_in()
     name = request.form["name"]
     duration = int(request.form["duration"])
     deadline = int(request.form["deadline"])
@@ -370,11 +403,12 @@ def add_task():
 
     print(Schedule.return_schedule())
 
-    return redirect("/")
+    return redirect("/menu")
 
 
 @app.route("/schedule_view")
 def schedule_view():
+    ensure_check_in()
     schedule_list = Schedule.return_schedule()
 
     def format_schedule(schedule_list):
@@ -397,16 +431,13 @@ def schedule_view():
         return schedule_to_display
 
     schedule_list = format_schedule(schedule_list)
-    print("FIRST")
-    print(schedule_list)
-    print("AFTER")
-    print(Schedule.return_schedule())
 
     return render_template("schedule_view.html", schedule_list=schedule_list)
 
 
 @app.route("/reschedule", methods=["POST"])
 def reschedule():
+    ensure_check_in()
     selected_ids = request.form.getlist("selected_tasks")
 
     print(selected_ids)
@@ -418,6 +449,38 @@ def reschedule():
     new_schedule = Schedule.automatic_scheduler(selected_ids)
 
     return redirect("/schedule_view")
+
+
+@app.route("/", methods=["GET", "POST"])
+# GET is for rendering the HTML file and POST is for retrieving the information from the form
+def check_in():
+
+    today = datetime.now().date() # retrieves today's date
+    day_of_week = datetime.now().weekday()  # returns an integer from 0–6
+
+    if request.method == "POST": # if the form has been submitted
+        mood_value = int(request.form["mood"])
+
+        # Check if the form has already been submitted today
+        existing = Mood.query.filter_by(date=today).first()
+
+        if existing: # if the form has already been submitted
+            existing.mood_value = mood_value
+            # overwriting the old mood value with the new one
+        else: # if the user has not checked in yet for today
+            # the mood and its information is logged in the database
+            new_mood = Mood(
+                day_of_week=day_of_week,
+                mood_value=mood_value,
+                date=today
+            )
+            db.session.add(new_mood)
+
+        db.session.commit() # updates the database
+
+        return redirect("/menu") # goes back to the main menu of the list of tasks
+
+    return render_template("check_in.html")
 
 # --------------------------------------------------------
 
