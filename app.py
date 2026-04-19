@@ -18,6 +18,24 @@ def get_current_time():
     return current_time
 
 
+def convert_time(integer_time):
+
+	hours = str(integer_time // 60) # integer divides to find the number of hours
+	minutes = str(integer_time % 60) # finds the remainder after this division
+	
+	if len(hours) < 2: # checking if the hours length is too short
+	
+		hours = "0" + hours # performing concatenation to make the hours 2 digits, if not originally
+		
+	if len(minutes) < 2: # does the same for the minutes
+	
+		minutes = "0" + minutes
+	
+	converted_time = hours + ":" + minutes
+			
+	return converted_time
+
+
 def find_start_of_day(current_time, times):
   
   counter = 0 # this will be the index of the task slot that the current time will be compared to
@@ -46,7 +64,15 @@ def find_start_of_day(current_time, times):
   return [start_of_day, counter+1]
 
 
-# Class Task Design and Database ----------------------------------------------------------------------
+# Class Daily Check in Database Design ------------------------------------------------------------
+
+class Mood(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    day_of_week = db.Column(db.Integer)  # 0 = Monday
+    mood_value = db.Column(db.Integer)
+    date = db.Column(db.Date)  # to prevent duplicates per day
+
+# Class Task Database Design ----------------------------------------------------------------------
 
 class Task(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -356,6 +382,9 @@ def schedule_view():
         schedule_to_display = []
 
         for block in schedule_list:
+
+            block[1][0] = convert_time(block[1][0]) # converts the start minutes into time format
+            block[1][1] = convert_time(block[1][1]) # converts the end minutes into time format
 
             if block[0] == "BUSY":
                 schedule_to_display.append(["BUSY", block[1]])
