@@ -428,7 +428,25 @@ def calculate_priority_precedence_value(task_id):
         priority_precedence = Task.query.get(task_id).priority
     return priority_precedence
 
-print(calculate_priority_precedence_value(7))
+# print(calculate_priority_precedence_value(7))
+
+
+def calculate_deadline_precedence_value(task_id):
+    with app.app_context():
+        deadline = Task.query.get(task_id).deadline
+        duration = Task.query.get(task_id).duration
+
+    current_time = 488
+    float_value = deadline - current_time - duration
+    float_hours = float_value // 60
+    print(float_hours)
+    deadline_precedence = (24 - float_hours)*(14)
+    return deadline_precedence
+
+# print("Deadline Prec. Value: ", calculate_deadline_precedence_value(3))
+
+
+
 
 
 # Routes ----------------------------------------------------------------------------
