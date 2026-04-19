@@ -17,6 +17,12 @@ class Mood(db.Model):
     mood_value = db.Column(db.Integer)
     date = db.Column(db.Date)  # to prevent duplicates per day
 
+    def __init__(self, u_day_of_week, u_mood_value, u_date):
+        self.day_of_week = u_day_of_week
+        self.mood_value = u_mood_value
+        self.date = u_date
+
+
 # Class Task Database Design ----------------------------------------------------------------------
 
 class Task(db.Model):
@@ -290,8 +296,8 @@ def get_current_time():
 
 def convert_time(integer_time):
 
-	hours = str(integer_time // 60) # integer divides to find the number of hours
-	minutes = str(integer_time % 60) # finds the remainder after this division
+	hours = str((integer_time) // 60) # integer divides to find the number of hours
+	minutes = str((integer_time) % 60) # finds the remainder after this division
 	
 	if len(hours) < 2: # checking if the hours length is too short
 	
@@ -369,14 +375,66 @@ def ensure_check_in():
     today = datetime.now().date()
     existing = Mood.query.filter_by(date=today).first()
     if not existing: # if there is no mood entry for today
+        print("FORCED")
         return redirect(url_for("check_in")) # go to the check in page
 
+
+def calculate_shifting_factor(mood_today):
+
+    mean_mood = get_mean_mood()
+
+    difference = mood_today - mean_mood
+        
+    if difference >= 4: 
+        
+        shifting_factor = 2
+            
+    elif difference < 4 and difference >= 0:
+        
+        shifting_factor = 0.25*difference + 1
+            
+    elif difference < 0 and difference > -4:
+
+        difference = -1 * difference
+
+        shifting_factor = -1 *(0.25*difference + 1)
+            
+    elif difference <= -4:
+        
+        shifting_factor = -2
+            
+    return shifting_factor
+
+
+# print("Shifting factor:", calculate_shifting_factor(5.714285714285714))
+
+
+def calculate_difficulty_precedence_value(task_id, mood_today):
+
+    shifting_factor = calculate_shifting_factor(mood_today)
+
+    with app.app_context():
+        difficulty = Task.query.get(task_id).difficulty
+
+    difficulty_precedence = difficulty * shifting_factor
+
+    return difficulty_precedence
+
+# print(calculate_difficulty_precedence_value(7, 1))
+
+
+def calculate_priority_precedence_value(task_id):
+    with app.app_context():
+        priority_precedence = Task.query.get(task_id).priority
+    return priority_precedence
+
+print(calculate_priority_precedence_value(7))
 
 
 # Routes ----------------------------------------------------------------------------
 
 
-@app.route("/menu")
+@app.route("/")
 def home():
     ensure_check_in()
     tasks = Task.query.all()
@@ -403,7 +461,7 @@ def add_task():
 
     print(Schedule.return_schedule())
 
-    return redirect("/menu")
+    return redirect("/")
 
 
 @app.route("/schedule_view")
@@ -417,22 +475,20 @@ def schedule_view():
 
         for block in schedule_list:
 
-            block[1][0] = convert_time(block[1][0]) # converts the start minutes into time format
-            block[1][1] = convert_time(block[1][1]) # converts the end minutes into time format
+            start_string = convert_time(block[1][0]) # converts the start minutes into time format
+            end_string = convert_time(block[1][1]) # converts the end minutes into time format
 
             if block[0] == "BUSY":
-                schedule_to_display.append(["BUSY", block[1]])
+                schedule_to_display.append(["BUSY", [start_string, end_string]])
 
             else:
                 task_id = block[0]
                 task = Task.query.get(task_id)
-                schedule_to_display.append([task.name, block[1], task_id])
+                schedule_to_display.append([task.name, [start_string, end_string], task_id])
 
         return schedule_to_display
 
-    schedule_list = format_schedule(schedule_list)
-
-    return render_template("schedule_view.html", schedule_list=schedule_list)
+    return render_template("schedule_view.html", schedule_list=format_schedule(schedule_list))
 
 
 @app.route("/reschedule", methods=["POST"])
@@ -451,7 +507,7 @@ def reschedule():
     return redirect("/schedule_view")
 
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/check_in", methods=["GET", "POST"])
 # GET is for rendering the HTML file and POST is for retrieving the information from the form
 def check_in():
 
@@ -478,7 +534,7 @@ def check_in():
 
         db.session.commit() # updates the database
 
-        return redirect("/menu") # goes back to the main menu of the list of tasks
+        return redirect("/") # goes back to the main menu of the list of tasks
 
     return render_template("check_in.html")
 
