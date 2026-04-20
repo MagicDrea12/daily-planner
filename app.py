@@ -8,6 +8,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
+print(app.config['SQLALCHEMY_DATABASE_URI'])
 
 # Class Daily Check in Database Design ------------------------------------------------------------
 
@@ -27,7 +28,8 @@ class Task(db.Model):
     duration = db.Column(db.Integer, nullable=False) 
     deadline = db.Column(db.Integer, nullable=False)
     priority = db.Column(db.Integer, nullable=False)                   
-    difficulty = db.Column(db.Integer, nullable=False)                
+    difficulty = db.Column(db.Integer, nullable=False)
+    completed = db.Column(db.Boolean, default=False)               
 
     def __init__(self, u_name, u_duration, u_deadline, u_priority, u_difficulty):
         self.name = u_name
@@ -189,7 +191,19 @@ class schedule():
 
         schedule.remove_selected_tasks(self, rescheduling)
 
-        rescheduling = return_sorted_list(rescheduling, mood_today, current_time)
+        incomplete_tasks = []
+
+        for task_id in rescheduling:
+
+            existing = Task.query.get(task_id)
+
+            if existing: # check if the task exists
+
+                if existing.completed is False: # check if the task hasn't been completed yet
+
+                    incomplete_tasks.append(task_id)
+
+        rescheduling = return_sorted_list(incomplete_tasks, mood_today, current_time)
 
         print("This is the new schedule:")
 
@@ -364,7 +378,7 @@ def get_mean_mood():
 
     return mean
 
-print("Mean mood: ", get_mean_mood())
+# print("Mean mood: ", get_mean_mood())
 
 
 def calculate_shifting_factor(mood_today):
@@ -450,7 +464,7 @@ def calculate_total_precedence_value(task_id, mood_today, current_time):
 
     return total_precedence_value
 
-print("Total Prec. V: ", calculate_total_precedence_value(3, 8, 488))
+#print("Total Prec. V: ", calculate_total_precedence_value(3, 8, 488))
 
 
 def create_task_to_precedence_dictionary(list_of_tasks, mood_today, current_time):
@@ -465,7 +479,7 @@ def create_task_to_precedence_dictionary(list_of_tasks, mood_today, current_time
 
     return precedence_dictionary
 
-my_dict = create_task_to_precedence_dictionary([1, 2, 3, 4, 5], 8, 488)
+# my_dict = create_task_to_precedence_dictionary([1, 2, 3, 4, 5], 8, 488)
 
 def create_sorted_dictionary_by_precedence_value(precedence_dictionary):
 
@@ -473,8 +487,8 @@ def create_sorted_dictionary_by_precedence_value(precedence_dictionary):
 
   return sorted_dictionary
 
-sorted_dict = create_sorted_dictionary_by_precedence_value(my_dict)
-print(sorted_dict)
+# sorted_dict = create_sorted_dictionary_by_precedence_value(my_dict)
+# print(sorted_dict)
 
 
 def return_reversed_list_of_keys(sorted_dictionary):
@@ -487,7 +501,7 @@ def return_reversed_list_of_keys(sorted_dictionary):
 
   return list_of_keys
 
-print(return_reversed_list_of_keys(sorted_dict))
+#print(return_reversed_list_of_keys(sorted_dict))
 
 
 def return_sorted_list(list_of_tasks_to_be_rescheduled, mood_today, current_time):
@@ -500,7 +514,7 @@ def return_sorted_list(list_of_tasks_to_be_rescheduled, mood_today, current_time
 
     return sorted_list
 
-Schedule.automatic_scheduler([1, 2, 3, 4, 5], 8, 488)
+#Schedule.automatic_scheduler([1, 2, 3, 4, 5], 8, 488)
 
 
 def get_mood_today():
@@ -514,10 +528,12 @@ def get_mood_today():
     else:
         return 5 # returns default mood value
 
-print("Today's Mood Value: ", get_mood_today())
+# print("Today's Mood Value: ", get_mood_today())
 
 
 # Routes ----------------------------------------------------------------------------
+
+cupcakes = 0
 
 
 @app.before_request
@@ -533,9 +549,13 @@ def ensure_check_in():
     if not existing: # if today's mood does not exist
         return redirect(url_for("check_in")) # go to the check in page
 
-
 @app.route("/")
 def home():
+    return render_template("menu.html")
+
+
+@app.route("/tasks")
+def tasks():
     tasks = Task.query.all()
     return render_template("index.html", tasks=tasks)
 
@@ -555,16 +575,35 @@ def add_task():
 
     # THIS IS WHERE A NEW TASK GETS AUTOMATICALLY SCHEDULED IN!
     with app.app_context():
-        Schedule.automatic_scheduler([new_task.id], 8, get_current_time())
+        Schedule.automatic_scheduler([new_task.id], get_mood_today(), get_current_time())
 
     print(Schedule.return_schedule())
 
-    return redirect("/")
+    return redirect("/tasks")
 
 
 @app.route("/schedule_view")
 def schedule_view():
+
     schedule_list = Schedule.return_schedule()
+
+    updated_list = []
+
+    for block in schedule_list:
+
+            if block[0] == "BUSY":
+                updated_list.append(block)
+
+            else:
+                existing = Task.query.get(block[0])
+
+                if existing: # check if the task exists
+
+                    if existing.completed is False: # check if the task hasn't been completed yet
+
+                        updated_list.append(block)
+
+    schedule_list = updated_list
 
     def format_schedule(schedule_list):
 
@@ -598,7 +637,7 @@ def reschedule():
 
     print(selected_ids)
 
-    new_schedule = Schedule.automatic_scheduler(selected_ids, 8, get_current_time())
+    new_schedule = Schedule.automatic_scheduler(selected_ids, get_mood_today(), get_current_time())
 
     return redirect("/schedule_view")
 
@@ -633,6 +672,41 @@ def check_in():
         return redirect("/") # goes back to the main menu of the list of tasks
 
     return render_template("check_in.html")
+
+@app.route("/bakery")
+def bakery():
+    global cupcakes
+    return render_template("bakery.html", cupcakes=cupcakes)
+
+
+@app.route("/delete/<int:task_id>") # task_id is an integer
+def delete_task(task_id):
+    with app.app_context():
+        task = Task.query.get(task_id)
+
+    if task: # if the task exists
+        db.session.delete(task)
+        db.session.commit()
+
+    return redirect("/tasks")
+
+@app.route("/complete/<int:task_id>")
+def complete_task(task_id):
+    task = Task.query.get(task_id)
+    global cupcakes
+    if task:
+        if task.completed is True:
+            task.completed = True
+            db.session.commit()
+        elif task.completed is False:
+            task.completed = True
+            cupcakes += 1
+            db.session.commit()
+
+    print(cupcakes)
+
+    return redirect("/tasks")
+
 
 # --------------------------------------------------------
 

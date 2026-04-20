@@ -1,10 +1,15 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>My App</title>
+    <title>Automatic Scheduler</title>
   </head>
   <body>
     <h1>My Tasks</h1>
+
+  <hr>
+    <a href="/">Back to the Main Menu</a>
+    <hr>
+    <br>
 
 <h2>Add Task</h2>
 <form action="/add" method="POST">
@@ -20,10 +25,24 @@
 <br/>
 <h2>List of Tasks</h2>
 
-
 <ul>
   {% for task in tasks %}
-    <li>Task ID: {{ task.id }} - Task Name: {{ task.name }} - Duration: {{ task.duration }} min - Deadline: {{ task.deadline }} - Priority: {{ task.priority }} - Difficulty: {{ task.difficulty }}</li>
+    <li>
+    {% if task.completed %}
+      <s>Task ID: {{ task.id }} - Task Name: {{ task.name }} - Duration: {{ task.duration }} min - Deadline: {{ task.deadline }} - Priority: {{ task.priority }} - Difficulty: {{ task.difficulty }}</s>
+    {% else %}
+      Task ID: {{ task.id }} - Task Name: {{ task.name }} - Duration: {{ task.duration }} min - Deadline: {{ task.deadline }} - Priority: {{ task.priority }} - Difficulty: {{ task.difficulty }}
+    {% endif %}
+
+    <a href="/complete/{{ task.id }}">
+    <button>✔</button>
+    </a>
+    
+    <a href="/delete/{{ task.id }}">
+      <button>Delete</button>
+    </a>
+    </li>
+    
   {% endfor %}
 </ul>
 
