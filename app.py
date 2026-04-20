@@ -412,6 +412,7 @@ def calculate_shifting_factor(mood_today):
 def calculate_difficulty_precedence_value(task_id, mood_today):
 
     shifting_factor = calculate_shifting_factor(mood_today)
+    print("Shifting factor: ", shifting_factor)
 
     with app.app_context():
         difficulty = Task.query.get(task_id).difficulty
@@ -420,7 +421,7 @@ def calculate_difficulty_precedence_value(task_id, mood_today):
 
     return difficulty_precedence
 
-# print(calculate_difficulty_precedence_value(7, 1))
+# print(calculate_difficulty_precedence_value(3, 1))
 
 
 def calculate_priority_precedence_value(task_id):
@@ -431,12 +432,11 @@ def calculate_priority_precedence_value(task_id):
 # print(calculate_priority_precedence_value(7))
 
 
-def calculate_deadline_precedence_value(task_id):
+def calculate_deadline_precedence_value(task_id, current_time):
     with app.app_context():
         deadline = Task.query.get(task_id).deadline
         duration = Task.query.get(task_id).duration
 
-    current_time = 488
     float_value = deadline - current_time - duration
     float_hours = float_value // 60
     print(float_hours)
@@ -444,6 +444,25 @@ def calculate_deadline_precedence_value(task_id):
     return deadline_precedence
 
 # print("Deadline Prec. Value: ", calculate_deadline_precedence_value(3))
+
+
+
+def calculate_total_precedence_value(task_id, mood_today, current_time):
+
+    difficulty_precedence = calculate_difficulty_precedence_value(task_id, mood_today)
+    print("Difficulty Prec. V.: ", difficulty_precedence)
+
+    priority_precedence = calculate_priority_precedence_value(task_id)
+    print("Priority Prec. V.: ", priority_precedence)
+
+    deadline_precedence = calculate_deadline_precedence_value(task_id, current_time)
+    print("Deadline Prec. V.: ", deadline_precedence)
+
+    total_precedence_value = difficulty_precedence + priority_precedence + deadline_precedence
+
+    return total_precedence_value
+
+print("Total Prec. V: ", calculate_total_precedence_value(3, 8, 488))
 
 
 
