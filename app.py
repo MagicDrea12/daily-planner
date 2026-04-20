@@ -301,7 +301,7 @@ def remove_all():
 def get_current_time():
     full_date = datetime.now()
     current_time = (full_date.hour * 60) + full_date.minute
-    return current_time
+    return 0
 
 
 def convert_time(integer_time):
@@ -573,37 +573,29 @@ def add_task():
     db.session.add(new_task)
     db.session.commit()
 
-    # THIS IS WHERE A NEW TASK GETS AUTOMATICALLY SCHEDULED IN!
-    with app.app_context():
-        Schedule.automatic_scheduler([new_task.id], get_mood_today(), get_current_time())
-
-    print(Schedule.return_schedule())
-
     return redirect("/tasks")
 
 
 @app.route("/schedule_view")
 def schedule_view():
 
+    Schedule.remove_all_tasks()
+
+    tasks = Task.query.all()
+
+    list_of_task_ids = []
+
+    for task in tasks:
+
+        if task.completed is False:
+
+            list_of_task_ids.append(task.id)
+
+    with app.app_context():
+        Schedule.automatic_scheduler(list_of_task_ids, get_mood_today(), get_current_time())
+
     schedule_list = Schedule.return_schedule()
 
-    updated_list = []
-
-    for block in schedule_list:
-
-            if block[0] == "BUSY":
-                updated_list.append(block)
-
-            else:
-                existing = Task.query.get(block[0])
-
-                if existing: # check if the task exists
-
-                    if existing.completed is False: # check if the task hasn't been completed yet
-
-                        updated_list.append(block)
-
-    schedule_list = updated_list
 
     def format_schedule(schedule_list):
 
