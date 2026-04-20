@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 
@@ -16,11 +16,6 @@ class Mood(db.Model):
     day_of_week = db.Column(db.Integer)  # 0 = Monday
     mood_value = db.Column(db.Integer)
     date = db.Column(db.Date)  # to prevent duplicates per day
-
-    def __init__(self, u_day_of_week, u_mood_value, u_date):
-        self.day_of_week = u_day_of_week
-        self.mood_value = u_mood_value
-        self.date = u_date
 
 
 # Class Task Database Design ----------------------------------------------------------------------
@@ -186,15 +181,16 @@ class schedule():
         return future_tasks
 
     
-    def automatic_scheduler(self, tasks_to_be_rescheduled):
-
-        current_time = get_current_time()
+    def automatic_scheduler(self, tasks_to_be_rescheduled, mood_today, current_time):
         
         future_tasks = schedule.return_future_tasks(self)
 
         rescheduling = list(set(tasks_to_be_rescheduled + future_tasks))
 
         schedule.remove_selected_tasks(self, rescheduling)
+
+        rescheduling = return_sorted_list(rescheduling, mood_today, current_time)
+
         print("This is the new schedule:")
 
         print(self.schedule_list)
@@ -256,7 +252,7 @@ print("Schedule List: ", Schedule.return_schedule())
 
 """tasks_to_be_rescheduled = [3, 1]
 
-Schedule.automatic_scheduler(tasks_to_be_rescheduled)
+Schedule.automatic_scheduler(tasks_to_be_rescheduled, 8, get_current_time())
 
 print(Schedule.return_schedule())"""
 
@@ -371,14 +367,6 @@ def get_mean_mood():
 print("Mean mood: ", get_mean_mood())
 
 
-def ensure_check_in():
-    today = datetime.now().date()
-    existing = Mood.query.filter_by(date=today).first()
-    if not existing: # if there is no mood entry for today
-        print("FORCED")
-        return redirect(url_for("check_in")) # go to the check in page
-
-
 def calculate_shifting_factor(mood_today):
 
     mean_mood = get_mean_mood()
@@ -465,22 +453,95 @@ def calculate_total_precedence_value(task_id, mood_today, current_time):
 print("Total Prec. V: ", calculate_total_precedence_value(3, 8, 488))
 
 
+def create_task_to_precedence_dictionary(list_of_tasks, mood_today, current_time):
 
+    precedence_dictionary = {}
+
+    for task_id in list_of_tasks:
+
+        precedence_value = calculate_total_precedence_value(task_id, mood_today, current_time)
+
+        precedence_dictionary.update({task_id: precedence_value})
+
+    return precedence_dictionary
+
+my_dict = create_task_to_precedence_dictionary([1, 2, 3, 4, 5], 8, 488)
+
+def create_sorted_dictionary_by_precedence_value(precedence_dictionary):
+
+  sorted_dictionary = dict(sorted(precedence_dictionary.items(), key=lambda item: item[1]))
+
+  return sorted_dictionary
+
+sorted_dict = create_sorted_dictionary_by_precedence_value(my_dict)
+print(sorted_dict)
+
+
+def return_reversed_list_of_keys(sorted_dictionary):
+
+  list_of_keys = list(sorted_dictionary.keys())
+  # returns a list of the dictionary's keys
+
+  list_of_keys = list_of_keys[::-1]
+  # reverses the list, by splicing the array from beginning to end with a step of -1
+
+  return list_of_keys
+
+print(return_reversed_list_of_keys(sorted_dict))
+
+
+def return_sorted_list(list_of_tasks_to_be_rescheduled, mood_today, current_time):
+
+    precedence_dictionary = create_task_to_precedence_dictionary(list_of_tasks_to_be_rescheduled, mood_today, current_time)
+
+    sorted_dictionary = create_sorted_dictionary_by_precedence_value(precedence_dictionary)
+
+    sorted_list = return_reversed_list_of_keys(sorted_dictionary)
+
+    return sorted_list
+
+Schedule.automatic_scheduler([1, 2, 3, 4, 5], 8, 488)
+
+
+def get_mood_today():
+
+    today = datetime.now().date() # gets today's date
+    with app.app_context():
+        existing = Mood.query.filter_by(date=today).first() # finds the mood entry for today
+
+    if existing: # if there is a mood entry for today
+        return existing.mood_value # returns the mood value for today
+    else:
+        return 5 # returns default mood value
+
+print("Today's Mood Value: ", get_mood_today())
 
 
 # Routes ----------------------------------------------------------------------------
 
 
+@app.before_request
+def ensure_check_in():
+
+    if request.endpoint == "check_in":
+        return  # don't block the check-in page itself
+
+    today = datetime.now().date() # gets today's date
+    existing = Mood.query.filter_by(date=today).first()
+    # checks if there is a mood entry for today
+
+    if not existing: # if today's mood does not exist
+        return redirect(url_for("check_in")) # go to the check in page
+
+
 @app.route("/")
 def home():
-    ensure_check_in()
     tasks = Task.query.all()
     return render_template("index.html", tasks=tasks)
 
 
 @app.route("/add", methods=["POST"])
 def add_task():
-    ensure_check_in()
     name = request.form["name"]
     duration = int(request.form["duration"])
     deadline = int(request.form["deadline"])
@@ -494,7 +555,7 @@ def add_task():
 
     # THIS IS WHERE A NEW TASK GETS AUTOMATICALLY SCHEDULED IN!
     with app.app_context():
-        Schedule.automatic_scheduler([new_task.id])
+        Schedule.automatic_scheduler([new_task.id], 8, get_current_time())
 
     print(Schedule.return_schedule())
 
@@ -503,7 +564,6 @@ def add_task():
 
 @app.route("/schedule_view")
 def schedule_view():
-    ensure_check_in()
     schedule_list = Schedule.return_schedule()
 
     def format_schedule(schedule_list):
@@ -530,7 +590,6 @@ def schedule_view():
 
 @app.route("/reschedule", methods=["POST"])
 def reschedule():
-    ensure_check_in()
     selected_ids = request.form.getlist("selected_tasks")
 
     print(selected_ids)
@@ -539,7 +598,7 @@ def reschedule():
 
     print(selected_ids)
 
-    new_schedule = Schedule.automatic_scheduler(selected_ids)
+    new_schedule = Schedule.automatic_scheduler(selected_ids, 8, get_current_time())
 
     return redirect("/schedule_view")
 
